@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Экзамен — Подготовка</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Unbounded:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #16161a;
+    --card: #1e1e24;
+    --border: #2a2a35;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --text: #f0f0f5;
+    --muted: #6b6b80;
+    --success: #43e97b;
+    --danger: #ff6584;
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding-bottom: 80px;
+  }
+
+  /* ---- SCREENS ---- */
+  .screen { display: none; padding: 16px; animation: fadeIn .25s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+  /* ---- HEADER ---- */
+  .header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 20px 16px 8px;
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg);
+  }
+  .back-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .header-title { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; }
+  .header-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  /* ---- SUBJECT CARDS (home) ---- */
+  .home-label {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px; letter-spacing: 2px; color: var(--muted);
+    text-transform: uppercase; margin: 24px 0 12px;
+  }
+  .subject-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 14px;
+    cursor: pointer; transition: transform .15s, border-color .15s;
+    position: relative; overflow: hidden;
+  }
+  .subject-card:active { transform: scale(.97); }
+  .subject-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--accent) 0%, transparent 60%);
+    opacity: .06;
+  }
+  .subject-card.s2::before { background: linear-gradient(135deg, var(--accent2) 0%, transparent 60%); }
+  .subject-card:hover { border-color: var(--accent); }
+  .subject-card.s2:hover { border-color: var(--accent2); }
+  .subject-num { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 6px; }
+  .subject-name { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 700; line-height: 1.4; margin-bottom: 8px; }
+  .subject-topic { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .subject-arrow { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 20px; }
+
+  /* ---- MODE SELECT ---- */
+  .mode-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 8px; }
+  .mode-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    cursor: pointer; transition: all .15s;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .mode-card:active { transform: scale(.97); }
+  .mode-icon { font-size: 28px; }
+  .mode-card-body {}
+  .mode-title { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .mode-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .mode-card.m-flash { border-color: rgba(108,99,255,.4); }
+  .mode-card.m-flash:hover { border-color: var(--accent); background: rgba(108,99,255,.08); }
+  .mode-card.m-test { border-color: rgba(255,101,132,.4); }
+  .mode-card.m-test:hover { border-color: var(--accent2); background: rgba(255,101,132,.08); }
+  .mode-card.m-trick { border-color: rgba(67,233,123,.4); }
+  .mode-card.m-trick:hover { border-color: var(--accent3); background: rgba(67,233,123,.08); }
+  .mode-card.m-theory { border-color: rgba(255,200,80,.4); }
+  .mode-card.m-theory:hover { border-color: #ffc850; background: rgba(255,200,80,.08); }
+
+  /* ---- FLASH CARDS ---- */
+  .flash-counter { font-size: 11px; color: var(--muted); text-align: center; margin-bottom: 16px; }
+  .flash-wrap { perspective: 1000px; height: 260px; margin-bottom: 20px; cursor: pointer; }
+  .flash-inner {
+    width: 100%; height: 100%;
+    position: relative; transform-style: preserve-3d;
+    transition: transform .5s cubic-bezier(.4,0,.2,1);
+  }
+  .flash-inner.flipped { transform: rotateY(180deg); }
+  .flash-face {
+    position: absolute; inset: 0;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px;
+    backface-visibility: hidden;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center;
+  }
+  .flash-face.back { transform: rotateY(180deg); border-color: var(--accent); }
+  .flash-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+  .flash-text { font-size: 15px; line-height: 1.65; }
+  .flash-hint { font-size: 10px; color: var(--muted); margin-top: 16px; }
+  .flash-nav { display: flex; gap: 10px; justify-content: center; }
+  .btn {
+    padding: 12px 24px; border-radius: 12px; border: none;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: .85; }
+  .btn:active { transform: scale(.96); }
+  .btn-full { width: 100%; text-align: center; }
+
+  /* ---- TEST ---- */
+  .test-progress { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
+  .test-progress-bar { height: 100%; background: var(--accent2); border-radius: 2px; transition: width .3s; }
+  .test-q-num { font-size: 10px; color: var(--muted); margin-bottom: 8px; letter-spacing: 1px; }
+  .test-question {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+    font-size: 14px; line-height: 1.6;
+  }
+  .test-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .test-opt {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px;
+    cursor: pointer; transition: all .15s; font-size: 13px; line-height: 1.5;
+  }
+  .test-opt:active { transform: scale(.98); }
+  .test-opt.correct { border-color: var(--success); background: rgba(67,233,123,.12); color: var(--success); }
+  .test-opt.wrong { border-color: var(--danger); background: rgba(255,101,132,.12); color: var(--danger); }
+  .test-opt.disabled { pointer-events: none; opacity: .5; }
+  .test-explain {
+    background: var(--card); border-left: 3px solid var(--accent);
+    border-radius: 0 12px 12px 0; padding: 14px 16px;
+    font-size: 12px; line-height: 1.6; color: var(--muted);
+    margin-bottom: 16px; display: none;
+  }
+  .test-explain.show { display: block; }
+
+  /* ---- TRICK QUESTIONS ---- */
+  .trick-card {
+    background: var(--card); border: 1px solid rgba(67,233,123,.3);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 14px;
+  }
+  .trick-badge {
+    display: inline-block; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--accent3); border: 1px solid rgba(67,233,123,.4);
+    border-radius: 6px; padding: 3px 8px; margin-bottom: 12px;
+  }
+  .trick-q { font-size: 14px; line-height: 1.6; margin-bottom: 14px; }
+  .trick-toggle {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+    transition: all .15s;
+  }
+  .trick-toggle:hover { border-color: var(--accent3); color: var(--accent3); }
+  .trick-answer {
+    margin-top: 14px; padding: 14px; background: rgba(67,233,123,.06);
+    border-radius: 10px; font-size: 13px; line-height: 1.6; color: var(--accent3);
+    display: none;
+  }
+  .trick-answer.show { display: block; animation: fadeIn .2s; }
+
+  /* ---- THEORY ---- */
+  .theory-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .theory-tab {
+    flex: 1; padding: 10px 8px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; cursor: pointer; transition: all .15s;
+  }
+  .theory-tab.active { border-color: #ffc850; color: #ffc850; background: rgba(255,200,80,.08); }
+  .theory-block {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 14px;
+  }
+  .theory-block-title {
+    font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 700;
+    color: #ffc850; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;
+  }
+  .theory-block p { font-size: 13px; line-height: 1.75; margin-bottom: 10px; color: var(--text); }
+  .theory-block p:last-child { margin-bottom: 0; }
+  .theory-block .qa-q {
+    font-size: 12px; font-weight: 600; color: var(--accent2);
+    margin-bottom: 4px; margin-top: 12px;
+  }
+  .theory-block .qa-a { font-size: 13px; line-height: 1.65; color: var(--muted); }
+  .provoke-block {
+    background: var(--card); border: 1px solid rgba(255,200,80,.35);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 14px;
+    position: relative; overflow: hidden;
+  }
+  .provoke-block::before {
+    content: ''; position: absolute; top:0; left:0; right:0; height: 2px;
+    background: linear-gradient(90deg, #ffc850, transparent);
+  }
+  .provoke-block-title {
+    font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 700;
+    color: #ffc850; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;
+  }
+  .provoke-block p { font-size: 13px; line-height: 1.8; margin-bottom: 10px; color: var(--text); }
+  .provoke-hook {
+    display: inline; background: rgba(255,200,80,.15);
+    border-bottom: 1px dashed #ffc850; color: #ffc850;
+  }
+  .provoke-tip {
+    font-size: 11px; color: var(--muted); margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border); font-style: italic;
+  }
+  .provoke-tip span { color: var(--accent3); }
+
+
+  .result-box {
+    background: var(--card); border-radius: var(--radius);
+    padding: 32px 20px; text-align: center; margin: 20px 0;
+  }
+  .result-score { font-family: 'Unbounded', sans-serif; font-size: 56px; font-weight: 900; line-height: 1; }
+  .result-label { font-size: 12px; color: var(--muted); margin-top: 8px; margin-bottom: 24px; }
+  .result-comment { font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+<!-- ==================== SCREEN: HOME ==================== -->
+<div id="s-home" class="screen active">
+  <div style="padding: 28px 16px 0">
+    <div style="font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">// ПОДГОТОВКА К КОМИССИИ</div>
+    <div style="font-family:'Unbounded',sans-serif;font-size:22px;font-weight:900;line-height:1.2">ЭКЗАМЕН<br><span style="color:var(--accent)">PREP</span></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px">Выбери предмет → режим → учись</div>
+  </div>
+
+  <div style="padding: 0 16px">
+    <div class="home-label">Предметы</div>
+
+    <div class="subject-card s1" onclick="selectSubject(0)">
+      <div class="subject-num">// ПРЕДМЕТ 01</div>
+      <div class="subject-name">Программная<br>инженерия</div>
+      <div class="subject-topic">Диаграмма вариантов использования (Use Case Diagram)</div>
+      <div class="subject-arrow">›</div>
+    </div>
+
+    <div class="subject-card s2" onclick="selectSubject(1)">
+      <div class="subject-num">// ПРЕДМЕТ 02</div>
+      <div class="subject-name">Разработка и<br>стандартизация ПС</div>
+      <div class="subject-topic">DFD-диаграмма (Data Flow Diagram)</div>
+      <div class="subject-arrow">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN: MODE SELECT ==================== -->
+<div id="s-mode" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="go('s-home')">‹</button>
+    <div>
+      <div class="header-title" id="mode-subject-title"></div>
+      <div class="header-sub">Выбери режим подготовки</div>
+    </div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="mode-grid">
+      <div class="mode-card m-flash" onclick="startFlash()">
+        <div class="mode-icon">🃏</div>
+        <div class="mode-card-body">
+          <div class="mode-title">Флэш-карточки</div>
+          <div class="mode-desc">Вопрос → тап → ответ. Листай пока не запомнишь</div>
+        </div>
+      </div>
+      <div class="mode-card m-test" onclick="startTest()">
+        <div class="mode-icon">📝</div>
+        <div class="mode-card-body">
+          <div class="mode-title">Тест</div>
+          <div class="mode-desc">4 варианта ответа. Сразу видишь где ошибся и почему</div>
+        </div>
+      </div>
+      <div class="mode-card m-trick" onclick="startTrick()">
+        <div class="mode-icon">🎯</div>
+        <div class="mode-card-body">
+          <div class="mode-title">Каверзные вопросы</div>
+          <div class="mode-desc">Ректорский режим — то что никто не ждёт</div>
+        </div>
+      </div>
+      <div class="mode-card m-theory" onclick="startTheory()">
+        <div class="mode-icon">📖</div>
+        <div class="mode-card-body">
+          <div class="mode-title">Теория</div>
+          <div class="mode-desc">Основной текст + провокационная версия чтобы ректор задал нужный вопрос</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN: FLASH ==================== -->
+<div id="s-flash" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="go('s-mode')">‹</button>
+    <div>
+      <div class="header-title">Флэш-карточки</div>
+      <div class="header-sub" id="flash-subject-label"></div>
+    </div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="flash-counter" id="flash-counter"></div>
+    <div class="flash-wrap" onclick="flipCard()">
+      <div class="flash-inner" id="flash-inner">
+        <div class="flash-face front">
+          <div class="flash-label">// вопрос</div>
+          <div class="flash-text" id="flash-q"></div>
+          <div class="flash-hint">↕ нажми чтобы перевернуть</div>
+        </div>
+        <div class="flash-face back">
+          <div class="flash-label">// ответ</div>
+          <div class="flash-text" id="flash-a"></div>
+        </div>
+      </div>
+    </div>
+    <div class="flash-nav">
+      <button class="btn btn-outline" onclick="prevCard()">← назад</button>
+      <button class="btn btn-primary" onclick="nextCard()">вперёд →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN: TEST ==================== -->
+<div id="s-test" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="go('s-mode')">‹</button>
+    <div>
+      <div class="header-title">Тест</div>
+      <div class="header-sub" id="test-subject-label"></div>
+    </div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="test-progress"><div class="test-progress-bar" id="test-bar"></div></div>
+    <div class="test-q-num" id="test-qnum"></div>
+    <div class="test-question" id="test-question"></div>
+    <div class="test-options" id="test-options"></div>
+    <div class="test-explain" id="test-explain"></div>
+    <button class="btn btn-primary btn-full" id="test-next-btn" onclick="nextQuestion()" style="display:none">Следующий вопрос →</button>
+  </div>
+</div>
+
+<!-- ==================== SCREEN: TRICK ==================== -->
+<div id="s-trick" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="go('s-mode')">‹</button>
+    <div>
+      <div class="header-title">Каверзные вопросы</div>
+      <div class="header-sub" id="trick-subject-label"></div>
+    </div>
+  </div>
+  <div style="padding:0 16px" id="trick-list"></div>
+</div>
+
+<!-- ==================== SCREEN: RESULT ==================== -->
+<div id="s-result" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="go('s-mode')">‹</button>
+    <div><div class="header-title">Результат теста</div></div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="result-box">
+      <div class="result-score" id="res-score"></div>
+      <div class="result-label" id="res-label"></div>
+      <div class="result-comment" id="res-comment"></div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="startTest()" style="margin-bottom:12px">Пройти ещё раз</button>
+    <button class="btn btn-outline btn-full" onclick="go('s-mode')">← К режимам</button>
+  </div>
+</div>
+
+<!-- ==================== SCREEN: THEORY ==================== -->
+<div id="s-theory" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="go('s-mode')">‹</button>
+    <div>
+      <div class="header-title">Теория</div>
+      <div class="header-sub" id="theory-subject-label"></div>
+    </div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="theory-tabs">
+      <button class="theory-tab active" id="tab-main" onclick="switchTab('main')">📄 Основной текст</button>
+      <button class="theory-tab" id="tab-provoke" onclick="switchTab('provoke')">🎣 Провокационный</button>
+    </div>
+    <div id="theory-content"></div>
+  </div>
+</div>
+
+<script>
+// ========================= DATA =========================
+
+const SUBJECTS = [
+  {
+    name: "Программная инженерия",
+    topic: "Use Case Diagram",
+    flash: [
+      {
+        q: "Что такое диаграмма вариантов использования?",
+        a: "UML-диаграмма, описывающая функциональные требования к системе через взаимодействие внешних актёров с вариантами использования (use cases). Отвечает на вопрос «что делает система», но не «как»."
+      },
+      {
+        q: "Кто такой актёр (actor)?",
+        a: "Внешняя сущность, взаимодействующая с системой: пользователь, другая система, устройство или время (timer). Актёр всегда находится вне границ системы."
+      },
+      {
+        q: "Что такое вариант использования (use case)?",
+        a: "Последовательность действий системы, выполняемых в ответ на инициативу актёра и приводящих к наблюдаемому результату. Изображается эллипсом."
+      },
+      {
+        q: "Что обозначает отношение <<include>>?",
+        a: "Обязательное включение: базовый use case ВСЕГДА вызывает включаемый UC. Включаемый UC — вынесенная общая логика. Стрелка от базового к включаемому."
+      },
+      {
+        q: "Что обозначает отношение <<extend>>?",
+        a: "Необязательное расширение: расширяющий UC добавляет поведение к базовому только при выполнении условия (extension point). Стрелка от расширяющего к базовому."
+      },
+      {
+        q: "Чем отличается include от extend?",
+        a: "include — всегда выполняется, базовый зависит от включаемого.\nextend — условно, базовый не знает о расширении.\nПример: «Авторизация» (include) vs «Показать капчу при ошибке» (extend)."
+      },
+      {
+        q: "Что такое обобщение (generalization) актёров?",
+        a: "Наследование: дочерний актёр может инициировать все UC родителя плюс свои. Например: Администратор → Пользователь (наследует все UC пользователя)."
+      },
+      {
+        q: "Для чего применяется Use Case Diagram?",
+        a: "1) Фиксация функциональных требований\n2) Определение границ системы\n3) Коммуникация с заказчиком (без техдетализации)\n4) База для планирования разработки и тест-кейсов"
+      },
+      {
+        q: "Что такое граница системы (system boundary)?",
+        a: "Прямоугольник, внутри которого расположены все use cases. Чётко разделяет «что внутри системы» от «что снаружи». Актёры всегда вне границы."
+      },
+      {
+        q: "Кто ввёл понятие Use Case и когда?",
+        a: "Ивар Якобсон (Ivar Jacobson) — в 1987 году при разработке AXE-телефонной системы в компании Ericsson. Позже вошло в стандарт UML в 1997 году."
+      }
+    ],
+    test: [
+      {
+        q: "Что обозначает нотация <<include>> между двумя use case?",
+        opts: [
+          "Расширяющий UC вызывается только при выполнении условия",
+          "Базовый UC всегда вызывает включаемый UC",
+          "Актёр наследует права другого актёра",
+          "Система зависит от внешней подсистемы"
+        ],
+        ans: 1,
+        explain: "<<include>> означает обязательный вызов. Базовый UC без включаемого — неполный. Это как вызов функции, которая всегда нужна (например, авторизация при любом действии)."
+      },
+      {
+        q: "Где располагаются актёры относительно границы системы?",
+        opts: [
+          "Внутри границы системы",
+          "На линии границы системы",
+          "Снаружи границы системы",
+          "Положение не регламентировано"
+        ],
+        ans: 2,
+        explain: "Актёр — всегда внешняя сущность. Он инициирует взаимодействие или получает результат, но не является частью разрабатываемой системы."
+      },
+      {
+        q: "Какой тип отношения подходит для функции «Показать CAPTCHA» — добавляется только при 3+ неудачных попытках входа?",
+        opts: [
+          "<<include>>",
+          "<<extend>>",
+          "Generalization",
+          "Association"
+        ],
+        ans: 1,
+        explain: "<<extend>> — расширение при условии. Extension point: «количество попыток >= 3». Базовый UC «Войти» не вызывает CAPTCHA сам — CAPTCHA расширяет его при условии."
+      },
+      {
+        q: "Кто автор концепции Use Case Diagram?",
+        opts: [
+          "Гради Буч",
+          "Джеймс Рамбо",
+          "Ивар Якобсон",
+          "Мартин Фаулер"
+        ],
+        ans: 2,
+        explain: "Ивар Якобсон разработал концепцию в 1987 в Ericsson для телекоммуникационной системы AXE. Именно поэтому его называют «отцом Use Case». Буч и Рамбо — соавторы UML, но не Use Case."
+      },
+      {
+        q: "Что отвечает Use Case Diagram на вопрос?",
+        opts: [
+          "КАК система реализует функцию",
+          "ЧТО система делает с точки зрения пользователя",
+          "КОГДА система выполняет действия",
+          "ГДЕ хранятся данные системы"
+        ],
+        ans: 1,
+        explain: "Use Case — диаграмма требований, а не реализации. Она показывает функции (ЧТО), но не алгоритмы (КАК). Для «КАК» используют Sequence или Activity диаграммы."
+      },
+      {
+        q: "Как изображается use case на диаграмме?",
+        opts: [
+          "Прямоугольником с именем",
+          "Ромбом внутри границы системы",
+          "Эллипсом с именем внутри системы",
+          "Кружком на линии границы"
+        ],
+        ans: 2,
+        explain: "Стандарт UML: use case = эллипс с именем, актёр = stick figure (человечек), граница системы = прямоугольник. Ромб в UML — решение (Activity diagram)."
+      },
+      {
+        q: "Обобщение (generalization) между актёрами означает:",
+        opts: [
+          "Один актёр включает UC другого обязательно",
+          "Дочерний актёр наследует все UC родительского",
+          "Актёры не могут взаимодействовать между собой",
+          "Один актёр заменяет другого в системе"
+        ],
+        ans: 1,
+        explain: "Generalization — наследование. Например, Администратор (дочерний) наследует все UC Пользователя (родительский) и добавляет свои (управление аккаунтами, настройки системы)."
+      }
+    ],
+    trick: [
+      {
+        badge: "ИСТОРИЯ",
+        q: "В каком году и в какой компании была впервые применена концепция Use Case?",
+        a: "1987 год, компания Ericsson (Швеция). Ивар Якобсон разрабатывал телекоммуникационную систему AXE. В стандарт UML концепция вошла позже — в 1997 году."
+      },
+      {
+        badge: "ТЕРМИНОЛОГИЯ",
+        q: "Чем принципиально отличается «актёр» от «пользователя» в контексте Use Case?",
+        a: "Актёр — это роль, а не человек. Один человек может быть двумя разными актёрами (Клиент и Администратор). Актёром может быть система, устройство, время (timer). Термин шире."
+      },
+      {
+        badge: "ЛОВУШКА",
+        q: "Студент нарисовал стрелку <<extend>> ОТ базового UC К расширяющему. Это правильно?",
+        a: "НЕТ. Стрелка <<extend>> идёт ОТ расширяющего UC К базовому. Логика: расширение «знает» о базовом, а базовый «не знает» о расширении. Это частая ошибка."
+      },
+      {
+        badge: "СТАНДАРТ",
+        q: "Какой стандарт регламентирует нотацию Use Case Diagram?",
+        a: "UML (Unified Modeling Language), поддерживается OMG (Object Management Group). Текущая версия UML 2.5.1 (2017). Это не ISO, а спецификация OMG."
+      },
+      {
+        badge: "ГЛУБИНА",
+        q: "В чём разница между первичным и вторичным актёром?",
+        a: "Первичный актёр — инициирует взаимодействие (достигает цели). Вторичный — участвует но не инициирует (например, платёжный шлюз в UC «Оплатить заказ»). Первичный — слева, вторичный — справа."
+      },
+      {
+        badge: "ЛОВУШКА",
+        q: "Можно ли использовать Use Case Diagram для описания внутренней логики системы?",
+        a: "НЕТ. UCD описывает только внешнее поведение — что система делает для актёров. Внутренние процессы описываются Sequence, Activity, Component диаграммами. Это ключевое ограничение."
+      }
+    ]
+  },
+  {
+    name: "Разработка и стандартизация ПС",
+    topic: "DFD-диаграмма",
+    flash: [
+      {
+        q: "Что такое DFD-диаграмма?",
+        a: "Data Flow Diagram — диаграмма потоков данных. Моделирует систему как набор процессов, соединённых потоками данных. Показывает «что происходит с данными», а не «как» это выполняется."
+      },
+      {
+        q: "Из каких 4 элементов состоит DFD?",
+        a: "1) Процесс (функциональный блок) — преобразует данные\n2) Поток данных — передача данных между элементами\n3) Хранилище данных — место хранения данных\n4) Внешняя сущность — источник/потребитель данных вне системы"
+      },
+      {
+        q: "Как изображается процесс в нотации Йордана/ДеМарко?",
+        a: "Окружность (круг) или прямоугольник с закруглёнными углами. Содержит: номер (идентификатор), имя процесса. В нотации Гейна-Сарсона — прямоугольник с округлёнными углами."
+      },
+      {
+        q: "Как изображается хранилище данных в DFD?",
+        a: "Два параллельных горизонтальных отрезка с именем между ними (в нотации Йордана). В нотации Гейна-Сарсона — прямоугольник, открытый с одной стороны. Обозначается D1, D2..."
+      },
+      {
+        q: "Что такое декомпозиция в DFD?",
+        a: "Разбиение сложного процесса на подпроцессы. Контекстная диаграмма (уровень 0) → DFD уровня 1 → DFD уровня 2... Каждый процесс раскладывается до примитивов — процессов, которые нельзя декомпозировать."
+      },
+      {
+        q: "Что такое контекстная диаграмма?",
+        a: "DFD уровня 0: вся система изображается как ОДИН процесс. Показывает только внешние сущности и потоки данных между ними и системой. Определяет границы системы."
+      },
+      {
+        q: "Чем DFD отличается от блок-схемы?",
+        a: "Блок-схема — последовательность операций, ориентирована на управление потоком. DFD — потоки ДАННЫХ, ориентирована на трансформацию данных. DFD не показывает порядок выполнения процессов."
+      },
+      {
+        q: "Какие две основные нотации DFD существуют?",
+        a: "1) Йордан-ДеМарко (Yourdon/DeMarco) — процессы-круги, хранилища-линии\n2) Гейна-Сарсона (Gane-Sarson) — процессы-прямоугольники с округлёнными углами\nОбе равнозначны по выразительности."
+      },
+      {
+        q: "Что такое словарь данных (Data Dictionary) в контексте DFD?",
+        a: "Документ, описывающий все потоки данных и хранилища DFD: структуру, тип, формат, ограничения. Неотъемлемая часть DFD-модели. Без него диаграмма неполна."
+      },
+      {
+        q: "Кто разработал методологию DFD и когда?",
+        a: "Том ДеМарко (Tom DeMarco) описал методологию в книге «Structured Analysis and System Specification» в 1979 году. Параллельно Эд Йордан (Edward Yourdon) развил нотацию. Гейн и Сарсон — альтернативная нотация того же года."
+      }
+    ],
+    test: [
+      {
+        q: "Сколько базовых элементов в DFD-диаграмме?",
+        opts: [
+          "3 (процесс, поток, хранилище)",
+          "4 (процесс, поток, хранилище, внешняя сущность)",
+          "5 (процесс, поток, хранилище, сущность, связь)",
+          "2 (процесс и поток данных)"
+        ],
+        ans: 1,
+        explain: "Классическая DFD: 4 элемента. Процесс (преобразует), Поток данных (передаёт), Хранилище (хранит), Внешняя сущность (источник/получатель вне системы)."
+      },
+      {
+        q: "Что представляет собой контекстная диаграмма?",
+        opts: [
+          "Детальная DFD с максимальным количеством процессов",
+          "DFD уровня 0: вся система как один процесс",
+          "Диаграмма хранилищ данных системы",
+          "Схема базы данных проекта"
+        ],
+        ans: 1,
+        explain: "Контекстная диаграмма (уровень 0) — самый верхний уровень. Система = 1 процесс + все внешние сущности + потоки между ними. Показывает границы системы."
+      },
+      {
+        q: "Как изображается хранилище данных в нотации Йордана?",
+        opts: [
+          "Ромб с именем внутри",
+          "Прямоугольник с двойной границей",
+          "Два параллельных горизонтальных отрезка с именем",
+          "Круг с подчёркнутым именем"
+        ],
+        ans: 2,
+        explain: "В нотации Йордана-ДеМарко хранилище — две горизонтальные линии (как открытый прямоугольник). Нотация Гейна-Сарсона использует прямоугольник открытый справа."
+      },
+      {
+        q: "В каком году Том ДеМарко опубликовал книгу, формализовавшую DFD?",
+        opts: [
+          "1968",
+          "1975",
+          "1979",
+          "1985"
+        ],
+        ans: 2,
+        explain: "1979 год — «Structured Analysis and System Specification» Тома ДеМарко. Параллельно Гейн и Сарсон опубликовали свою нотацию. Это период расцвета структурного анализа."
+      },
+      {
+        q: "Что такое «примитивный процесс» в DFD?",
+        opts: [
+          "Процесс без входящих потоков данных",
+          "Процесс, который нельзя декомпозировать далее",
+          "Внешняя сущность с минимальными данными",
+          "Хранилище с одной записью"
+        ],
+        ans: 1,
+        explain: "Примитивный (листовой) процесс — нижний уровень декомпозиции. Описывается спецификацией процесса (мини-спецификацией), а не дочерней DFD."
+      },
+      {
+        q: "Что DFD НЕ показывает в отличие от блок-схемы?",
+        opts: [
+          "Откуда берутся данные",
+          "Порядок и последовательность выполнения процессов",
+          "Куда уходят данные",
+          "Где хранятся данные"
+        ],
+        ans: 1,
+        explain: "DFD — не блок-схема. Она не показывает временной порядок выполнения. Процессы могут выполняться параллельно или в любой последовательности — DFD это не отражает."
+      },
+      {
+        q: "Как обозначаются внешние сущности в DFD?",
+        opts: [
+          "Эллипсом с двойным контуром",
+          "Прямоугольником (иногда с тенью)",
+          "Ромбом с идентификатором",
+          "Треугольником на границе системы"
+        ],
+        ans: 1,
+        explain: "Внешняя сущность = прямоугольник (иногда с тенью или заштрихованный угол для повторного использования). Это источник или получатель данных вне системы."
+      }
+    ],
+    trick: [
+      {
+        badge: "ИСТОРИЯ",
+        q: "Назовите двух авторов, одновременно разработавших разные нотации DFD в 1979 году.",
+        a: "Том ДеМарко + Эд Йордан (нотация Yourdon/DeMarco) и Крис Гейн + Трис Сарсон (нотация Gane-Sarson). Обе вышли в 1979 году. Именно поэтому есть две равноправные нотации."
+      },
+      {
+        badge: "ЛОВУШКА",
+        q: "Может ли поток данных в DFD идти напрямую от внешней сущности к хранилищу данных, минуя процесс?",
+        a: "НЕТ. Это нарушение правил DFD. Данные должны проходить через процесс — он их обрабатывает/валидирует. Прямая связь «сущность → хранилище» недопустима."
+      },
+      {
+        badge: "СТАНДАРТ",
+        q: "Какой стандарт описывает структурный анализ и DFD в российской практике?",
+        a: "ГОСТ 34.601-90 и методология IDEF0 (стандарт FIPS 183). DFD часто применяется совместно с IDEF0, хотя это разные нотации. IDEF0 — функции, DFD — потоки данных."
+      },
+      {
+        badge: "ТЕРМИНОЛОГИЯ",
+        q: "Чем «поток управления» отличается от «потока данных»? Что из этого есть в DFD?",
+        a: "В DFD — только потоки ДАННЫХ (информация). Потоки управления (сигналы, события, флаги) в классической DFD отсутствуют. Для управляющих потоков есть расширение — CFD (Control Flow Diagram)."
+      },
+      {
+        badge: "ГЛУБИНА",
+        q: "Что такое «словарь данных» и обязателен ли он при разработке DFD?",
+        a: "Словарь данных (Data Dictionary) — формальное описание всех потоков и хранилищ: структура, тип, формат, допустимые значения. Без него DFD технически неполна. Это не опция, а обязательная часть структурного анализа."
+      },
+      {
+        badge: "СРАВНЕНИЕ",
+        q: "В чём ключевое различие между DFD и ERD (Entity-Relationship Diagram)?",
+        a: "DFD — моделирует ПРОЦЕССЫ и потоки данных (динамика системы). ERD — моделирует СТРУКТУРУ данных (сущности и связи между ними, статика). DFD — «что происходит», ERD — «что хранится»."
+      }
+    ]
+  }
+];
+
+// ========================= THEORY DATA =========================
+
+const THEORY = [
+  // --- ПРЕДМЕТ 0: Программная инженерия ---
+  {
+    main: [
+      {
+        title: "Что такое Use Case Diagram",
+        paragraphs: [
+          "Это способ показать, кто работает с системой и что эти люди в ней делают. Актёр — это пользователь или внешняя система. Вариант использования — это конкретное действие которое актёр может выполнить.",
+          "Например, в CRM: актёр «Менеджер», варианты использования — «Создать клиента», «Просмотреть заказ», «Сформировать отчёт»."
+        ]
+      },
+      {
+        title: "Зачем нужна",
+        paragraphs: [
+          "Чтобы договориться с заказчиком — что именно система должна делать, кто ею пользуется. Это первый шаг перед написанием кода."
+        ]
+      },
+      {
+        title: "Из чего состоит",
+        paragraphs: [
+          "Актёры (человечки), варианты использования (овалы), связи между ними.",
+          "Отношение include — когда один ВИ обязательно включает другой. Отношение extend — когда один ВИ расширяет другой только в особых случаях."
+        ]
+      },
+      {
+        title: "Вероятные вопросы",
+        qa: [
+          { q: "— Чем актёр отличается от пользователя?", a: "Актёр — это роль, а не конкретный человек. Один человек может играть несколько ролей. Например, директор может быть и «Администратором» и «Менеджером» в разное время." },
+          { q: "— Что такое include и extend?", a: "Include — один сценарий всегда вызывает другой. Например, «Оформить заказ» всегда включает «Авторизоваться». Extend — необязательное расширение, только при условии. Например, «Применить скидку» — только если клиент VIP." },
+          { q: "— Какие диаграммы строятся после?", a: "Диаграммы деятельности — детализируют каждый сценарий, диаграммы классов — описывают структуру данных, диаграммы последовательностей — показывают порядок вызовов между объектами." },
+          { q: "— Какой инструмент используется?", a: "StarUML. Создаётся проект с подходом Rational Approach, Use Case View — для диаграмм прецедентов, Logical View — для классов и последовательностей." },
+          { q: "— Сколько диаграмм последовательностей нужно?", a: "По количеству вариантов использования — на каждый ВИ своя диаграмма последовательностей, плюс отдельные для подчинённых потоков." }
+        ]
+      }
+    ],
+    provoke: [
+      {
+        title: "Блок 1 — Что такое Use Case",
+        hook: "актёры и варианты использования",
+        tip: "Ректор перебьёт: «А чем актёр отличается от пользователя?» — ты готов.",
+        text: `Use Case Diagram — это UML-диаграмма, которая фиксирует <span class="provoke-hook">функциональные требования к системе через взаимодействие внешних актёров с вариантами использования</span>.
+
+Важно понимать: диаграмма отвечает на вопрос «что делает система», но не «как» — это принципиальное ограничение. Именно поэтому в ней нет алгоритмов, только роли и функции.
+
+Вся диаграмма строится вокруг трёх понятий: <span class="provoke-hook">актёр, вариант использования и граница системы</span>. Актёр — это не обязательно человек, это любая внешняя сущность: пользователь, другая система, даже таймер.`
+      },
+      {
+        title: "Блок 2 — Состав и отношения",
+        hook: "include и extend",
+        tip: "Скажи «два типа отношений» и сделай паузу — он сам спросит «каких именно».",
+        text: `На диаграмме используется <span class="provoke-hook">два принципиально разных типа отношений между вариантами использования</span>. Первый — include — означает обязательный вызов: базовый сценарий без него неполон. Второй — extend — означает условное расширение: базовый сценарий не знает, что его расширяют.
+
+Путаница между ними — самая частая ошибка. Стрелка extend идёт ОТ расширяющего К базовому, а не наоборот.`
+      },
+      {
+        title: "Блок 3 — Применение и история",
+        hook: "1987 год, Ericsson, Ивар Якобсон",
+        tip: "Упомяни год и компанию — ректор любит проверять знание истории вопроса.",
+        text: `Концепцию Use Case разработал <span class="provoke-hook">Ивар Якобсон в 1987 году в компании Ericsson</span> при создании телекоммуникационной системы AXE. В стандарт UML это вошло в 1997 году.
+
+Практическое применение: Use Case Diagram — это первый артефакт, который появляется в проекте. На его основе строятся тест-кейсы, диаграммы последовательностей и планируются итерации разработки.`
+      }
+    ]
+  },
+  // --- ПРЕДМЕТ 1: Разработка и стандартизация ---
+  {
+    main: [
+      {
+        title: "Что такое DFD",
+        paragraphs: [
+          "DFD — это диаграмма потоков данных. Она показывает как информация движется внутри системы: откуда приходит, где обрабатывается, где хранится и куда уходит.",
+        ]
+      },
+      {
+        title: "Четыре элемента DFD",
+        paragraphs: [
+          "Внешняя сущность — прямоугольник, источник или получатель данных извне системы. Например: клиент или банк.",
+          "Процесс — овал, то что система делает с данными. Например: «оформить заказ» или «проверить клиента».",
+          "Хранилище данных — две горизонтальные линии. Это база данных. Например: «список клиентов».",
+          "Поток данных — стрелки между элементами, показывают что именно передаётся."
+        ]
+      },
+      {
+        title: "Декомпозиция и связь с IDEF0",
+        paragraphs: [
+          "DFD строится как декомпозиция IDEF0 — берёшь процесс и детализируешь его, показывая как внутри него движутся данные.",
+          "Главное отличие от IDEF0: IDEF0 описывает функции системы — что делается, с каким управлением и ресурсами. DFD описывает только потоки данных — как информация перемещается между элементами."
+        ]
+      },
+      {
+        title: "Вероятные вопросы",
+        qa: [
+          { q: "— Назовите элементы DFD", a: "Внешняя сущность, процесс, хранилище данных, поток данных." },
+          { q: "— Чем хранилище отличается от внешней сущности?", a: "Хранилище — это база данных внутри системы. Внешняя сущность — это кто-то снаружи системы." },
+          { q: "— Приведите пример DFD", a: "Клиент → отправляет заявку → процесс «записать к врачу» → смотрит в хранилище «расписание врачей» → отправляет подтверждение обратно клиенту." }
+        ]
+      }
+    ],
+    provoke: [
+      {
+        title: "Блок 1 — Определение и суть",
+        hook: "четыре базовых элемента",
+        tip: "Скажи «четыре элемента» — он тут же перебьёт: «Назовите их». Ты готов.",
+        text: `DFD — диаграмма потоков данных — это инструмент структурного анализа, который показывает как информация движется внутри системы. В отличие от блок-схемы, DFD не описывает последовательность выполнения — она описывает <span class="provoke-hook">трансформацию данных через четыре базовых элемента</span>.
+
+Каждый элемент имеет строгую нотацию: внешняя сущность — прямоугольник вне границы системы, процесс — овал с номером, хранилище — две горизонтальные линии, поток данных — направленная стрелка с именем.`
+      },
+      {
+        title: "Блок 2 — Декомпозиция",
+        hook: "контекстная диаграмма — уровень 0",
+        tip: "Упомяни «уровень 0» — он спросит что это. Ответ: вся система как один процесс.",
+        text: `DFD строится по принципу декомпозиции «сверху вниз». Начинается с <span class="provoke-hook">контекстной диаграммы — уровня 0</span>, где вся система представлена одним процессом и показаны только внешние сущности. Затем каждый процесс разворачивается в дочернюю DFD, пока не дойдём до примитивов — процессов, которые дальше не раскладываются.`
+      },
+      {
+        title: "Блок 3 — Отличие от IDEF0 и история",
+        hook: "Том ДеМарко, 1979 год",
+        tip: "Назови автора и год — ректор не ожидает, что студент это знает. Выигрышный ход.",
+        text: `Методологию DFD формализовал <span class="provoke-hook">Том ДеМарко в 1979 году</span> в книге «Structured Analysis and System Specification». Параллельно вышла альтернативная нотация Гейна-Сарсона — поэтому сегодня существуют две равноправные нотации DFD.
+
+Ключевое отличие от IDEF0: IDEF0 отвечает на вопрос «что делает система» и описывает функции с входами, выходами, управлением и механизмами. DFD отвечает на вопрос «как движутся данные» и <span class="provoke-hook">не показывает управляющие воздействия и порядок выполнения</span> — это принципиальное ограничение нотации.`
+      }
+    ]
+  }
+];
+
+// ========================= STATE =========================
+let currentSubject = 0;
+let currentTheoryTab = 'main';
+let flashIdx = 0;
+let testIdx = 0;
+let testScore = 0;
+let testAnswered = false;
+let testQuestions = [];
+
+// ========================= NAV =========================
+function go(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function selectSubject(idx) {
+  currentSubject = idx;
+  const s = SUBJECTS[idx];
+  document.getElementById('mode-subject-title').textContent = s.name;
+  go('s-mode');
+}
+
+// ========================= FLASH =========================
+function startFlash() {
+  flashIdx = 0;
+  document.getElementById('flash-subject-label').textContent = SUBJECTS[currentSubject].topic;
+  renderFlash();
+  go('s-flash');
+}
+
+function renderFlash() {
+  const cards = SUBJECTS[currentSubject].flash;
+  const card = cards[flashIdx];
+  document.getElementById('flash-counter').textContent = `${flashIdx + 1} / ${cards.length}`;
+  document.getElementById('flash-q').textContent = card.q;
+  document.getElementById('flash-a').textContent = card.a;
+  document.getElementById('flash-inner').classList.remove('flipped');
+}
+
+function flipCard() {
+  document.getElementById('flash-inner').classList.toggle('flipped');
+}
+
+function nextCard() {
+  const cards = SUBJECTS[currentSubject].flash;
+  if (flashIdx < cards.length - 1) { flashIdx++; renderFlash(); }
+}
+
+function prevCard() {
+  if (flashIdx > 0) { flashIdx--; renderFlash(); }
+}
+
+// ========================= TEST =========================
+function startTest() {
+  const all = SUBJECTS[currentSubject].test;
+  testQuestions = [...all].sort(() => Math.random() - 0.5);
+  testIdx = 0;
+  testScore = 0;
+  document.getElementById('test-subject-label').textContent = SUBJECTS[currentSubject].topic;
+  renderQuestion();
+  go('s-test');
+}
+
+function renderQuestion() {
+  const q = testQuestions[testIdx];
+  testAnswered = false;
+  const bar = document.getElementById('test-bar');
+  bar.style.width = ((testIdx / testQuestions.length) * 100) + '%';
+  document.getElementById('test-qnum').textContent = `// ВОПРОС ${testIdx + 1} ИЗ ${testQuestions.length}`;
+  document.getElementById('test-question').textContent = q.q;
+  document.getElementById('test-explain').classList.remove('show');
+  document.getElementById('test-next-btn').style.display = 'none';
+
+  const opts = document.getElementById('test-options');
+  opts.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const el = document.createElement('div');
+    el.className = 'test-opt';
+    el.textContent = opt;
+    el.onclick = () => answerQuestion(i, el);
+    opts.appendChild(el);
+  });
+}
+
+function answerQuestion(chosen, el) {
+  if (testAnswered) return;
+  testAnswered = true;
+  const q = testQuestions[testIdx];
+  const opts = document.querySelectorAll('.test-opt');
+  opts.forEach((o, i) => {
+    o.classList.add('disabled');
+    if (i === q.ans) o.classList.add('correct');
+  });
+  if (chosen !== q.ans) {
+    el.classList.add('wrong');
+  } else {
+    testScore++;
+  }
+  const explain = document.getElementById('test-explain');
+  explain.textContent = q.explain;
+  explain.classList.add('show');
+  document.getElementById('test-next-btn').style.display = 'block';
+  document.getElementById('test-next-btn').textContent =
+    testIdx < testQuestions.length - 1 ? 'Следующий вопрос →' : 'Посмотреть результат';
+}
+
+function nextQuestion() {
+  testIdx++;
+  if (testIdx >= testQuestions.length) {
+    showResult();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResult() {
+  const total = testQuestions.length;
+  const pct = Math.round((testScore / total) * 100);
+  document.getElementById('res-score').textContent = `${testScore}/${total}`;
+  document.getElementById('res-label').textContent = `${pct}% правильных`;
+  let comment, color;
+  if (pct >= 85) { comment = "Чётко. Ректор не пройдёт — ты знаешь тему."; color = "var(--success)"; }
+  else if (pct >= 60) { comment = "Норм, но есть пробелы. Повтори карточки по ошибкам."; color = "var(--accent)"; }
+  else { comment = "Плохо. Без флэш-карточек на комиссию не ходи."; color = "var(--danger)"; }
+  document.getElementById('res-score').style.color = color;
+  document.getElementById('res-comment').textContent = comment;
+  go('s-result');
+}
+
+// ========================= TRICK =========================
+function startTrick() {
+  document.getElementById('trick-subject-label').textContent = SUBJECTS[currentSubject].topic;
+  const list = document.getElementById('trick-list');
+  list.innerHTML = '';
+  SUBJECTS[currentSubject].trick.forEach((t, i) => {
+    list.innerHTML += `
+      <div class="trick-card">
+        <div class="trick-badge">${t.badge}</div>
+        <div class="trick-q">${t.q}</div>
+        <button class="trick-toggle" onclick="toggleTrick(${i})">Показать ответ</button>
+        <div class="trick-answer" id="trick-ans-${i}">${t.a}</div>
+      </div>`;
+  });
+  go('s-trick');
+}
+
+function toggleTrick(i) {
+  const el = document.getElementById(`trick-ans-${i}`);
+  const btn = el.previousElementSibling;
+  if (el.classList.contains('show')) {
+    el.classList.remove('show');
+    btn.textContent = 'Показать ответ';
+  } else {
+    el.classList.add('show');
+    btn.textContent = 'Скрыть';
+  }
+}
+
+// ========================= THEORY =========================
+function startTheory() {
+  currentTheoryTab = 'main';
+  document.getElementById('theory-subject-label').textContent = SUBJECTS[currentSubject].topic;
+  document.getElementById('tab-main').classList.add('active');
+  document.getElementById('tab-provoke').classList.remove('active');
+  renderTheory();
+  go('s-theory');
+}
+
+function switchTab(tab) {
+  currentTheoryTab = tab;
+  document.getElementById('tab-main').classList.toggle('active', tab === 'main');
+  document.getElementById('tab-provoke').classList.toggle('active', tab === 'provoke');
+  renderTheory();
+}
+
+function renderTheory() {
+  const data = THEORY[currentSubject];
+  const container = document.getElementById('theory-content');
+  container.innerHTML = '';
+
+  if (currentTheoryTab === 'main') {
+    data.main.forEach(block => {
+      let html = `<div class="theory-block"><div class="theory-block-title">${block.title}</div>`;
+      if (block.paragraphs) {
+        block.paragraphs.forEach(p => { html += `<p>${p}</p>`; });
+      }
+      if (block.qa) {
+        block.qa.forEach(item => {
+          html += `<div class="qa-q">${item.q}</div><div class="qa-a">${item.a}</div>`;
+        });
+      }
+      html += `</div>`;
+      container.innerHTML += html;
+    });
+  } else {
+    data.provoke.forEach(block => {
+      container.innerHTML += `
+        <div class="provoke-block">
+          <div class="provoke-block-title">🎣 ${block.title}</div>
+          <p>${block.text}</p>
+          <div class="provoke-tip">⚡ <span>Крючок:</span> «${block.hook}» — ${block.tip}</div>
+        </div>`;
+    });
+  }
+}
+
+// Telegram init
+try {
+  if (window.Telegram && window.Telegram.WebApp) {
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+  }
+} catch(e) {}
+</script>
+</body>
+</html>
